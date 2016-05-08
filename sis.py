@@ -170,6 +170,16 @@ class Order:
 	def show_between_gm1(self,gm1_start,gm1_end):
 		if self.gm1_per >= gm1_start and self.gm1_per <= gm1_end:
 			str_show = self.show()
+			# self.cnt_between_gm1 += 1
+			# b14 = self.get_bonus2014()
+			# b16 = self.get_bonus2016()
+			# bnew = self.get_bonus_new(p1=0.055,p2=0.045,p3=0.03,p4=0.02,p5=0.015,p6=0.005)
+			# str_show = "%s,%.2f,%.2f,%.2f,%.2f" %(self.contract,self.gm1_per*100,b14,b16,bnew)
+			# if b16>=b14:
+			# 	self.cnt_2016_win += 1
+			# if bnew>=b14
+			# 	self.cnt_new_win += 1
+
 			return str_show
 		else:
 			return None
@@ -215,6 +225,8 @@ def iter_an_order(order,origin_mp,gm1_start,gm1_end):
 orders = []
 for arg in order_args:
 	orders.append(Order(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],arg[7],arg[8],arg[9],arg[10]))
+
+
 buffer_str = ''
 order_cnt = 0
 

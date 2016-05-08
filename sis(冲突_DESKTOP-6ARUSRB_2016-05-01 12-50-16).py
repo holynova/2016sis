@@ -1,7 +1,6 @@
 #-*- coding: utf-8 -*-
 import os
 import datetime
-from openpyxl import Workbook,load_workbook
 
 order_args = (
 ('NCL2014-500',5726495.73,5379220,46858,0,0,0,0,17752,71786,17037),
@@ -148,21 +147,25 @@ class Order:
 	def set_mp(self,mp):
 		self.mp = mp
 		self.renew_gm()
-'''
+
 	def show(self):
-		arr_bonus = []
-		arr_bonus.append(self.get_bonus2014())
-		arr_bonus.append(self.get_bonus2016())
-		increment = 0.005
-		#增加0.5%,0.6%,0.7%...1.2%
-		for i in range(5,13):
-			increment = i*0.001
-		arr_bonus.append(get_bonus_new(self,increment+0.05,increment+0.04,increment+0.025,increment+0.015,increment+0.01,increment+0.005))
-		str_show = "%s,%.2f," %(self.contract,self.gm1_per*100)
-		for b in arr_bonus:
-			str_show += "%.2f," %(b)
+		b14 = self.get_bonus2014()
+		b16 = self.get_bonus2016()
+		bnew = self.get_bonus_new(p1=0.055,p2=0.045,p3=0.03,p4=0.02,p5=0.015,p6=0.01)
+		str_show = "%s,%.2f,%.2f,%.2f,%.2f" %(self.contract,self.gm1_per*100,b14,b16,bnew)
+		# print str_show
 		return str_show
-		
+		# str_show = '%s,%.2f,%.1f,%.1f,%.2f,%.2f,%.2f,' %(self.contract, self.mp,self.gm1_per*100,self.gm3_per*100,b14,b16,b14-b16)
+		# str_show = 'mp=%.2f,gm1_p=%.1f,gm3_p=%.1f,b14=%.2f,b16=%.2f,b14-b16=%.2f,' %(self.mp,self.gm1_per*100,self.gm3_per*100,b14,b16,b14-b16)
+		# if b14>b16:
+		# 	str_show += '2014 better'
+		# elif b14<b16:
+		# 	str_show += "2016 better"
+		# elif b14==b16:
+		# 	str_show += 'same'
+		# else:
+		# 	str_show += 'error'
+		# print str_show
 
 	def show_between_gm1(self,gm1_start,gm1_end):
 		if self.gm1_per >= gm1_start and self.gm1_per <= gm1_end:
@@ -170,99 +173,68 @@ class Order:
 			return str_show
 		else:
 			return None
-'''
+
 o1 = Order('NCL2015-0220',1693970.09,1384640,19420,15301.14,0,0,0,39224,40603,3238)
 o2 = Order("NCL2015-0134",14434878,13424289,143680,0,133444,0,100000,54421,221149,3006)
 
 
-#detail 是输出每条模拟数据的结果，每个合同可能有几百条
-#summary 是输出整个合同的模拟结果，每个合同只有一条
-def iter_an_order(order,origin_mp,gm1_start,gm1_end,detail=True,summary = True):
-	class Sample:
-		pass
-
-	samples = []
-	for i in range(100,3000):
-		order.set_mp(origin_mp*i/1000)
-		if order.gm1_per >= gm1_start and order.gm1_per <= gm1_end:
-			arr = []
-			for j in range(0,13):
-				incre = j*0.001
-				arr.append(order.get_bonus_new(incre+0.05,incre+0.04,incre+0.025,incre+0.015,incre+0.01,incre+0.005))
-			
-			sample = Sample()
-			sample.contract = order.contract
-			sample.mp = order.mp
-			sample.b14 = order.get_bonus2014()
-			sample.gm1_per = order.gm1_per
-			sample.bonus_arr = arr
-
-			samples.append(sample)
 
 
-	#函数输出用的字符串
-	str_all_details = 'contract,mp,gm1_per,b14,other_bonus\n'
-	str_summary = "contract,all,b0_win_rate,b1_win_rate...bn_win_rate\n"
-	str_all =''
-	#对win进行计数的数组，0位置是总数，后面是每个方案的win counter
-	cnt_arr = []
-	for i in range(0,30):
-		cnt_arr.append(0)
-
-	for s in samples:
-		cnt_arr[0] +=1	
-		s.str = "%s,%.2f,%.2f,%.2f," %(s.contract,s.mp,s.gm1_per*100,s.b14)
-		
-		num_bonus = len(s.bonus_arr)
-		for i in range(num_bonus):
-			s.str += "%.2f," %(s.bonus_arr[i])
-			if s.bonus_arr[i] >= s.b14:
-				cnt_arr[i+1] +=1
-		s.str +='\n'
-		str_all_details += s.str
+def iter_an_order(order,origin_mp,gm1_start,gm1_end):
+	#print "contract,gm1%,spc2014,spc2016,spc-new"
+	# print "contract,mp,gm1%,gm3%,spc2014,spc2016,spc14-spc16,result"
+	cnt_between_gm1 = 0
+	cnt_2016_win = 0
+	cnt_new_win = 0
 	
-	if summary:
-		str = "%s," %(order.contract)
-		for item in cnt_arr:
-			str += "%.2f," %(float(item)/float(cnt_arr[0])*100)
-		str_summary += str +'\n'
-		print str
-		str_all +=str_summary
-	if detail:
-		str_all +=str_all_details
-
-	return str_all
-
-#写入当前文件夹下以时间命名的函数
-def save_to_file(common_name,content):
-	str_now = datetime.datetime.now().strftime('%y%m%d %H-%M-%S')
-	result_file_name = os.path.dirname(os.path.abspath(__file__)) +'\\'+common_name +str_now+'.txt'
-	with open(result_file_name,"w") as result_file:
-		result_file.write(content.encode('utf-8'))
-	print "saved to file: " + result_file_name
-def save_detal_to_excel(filename):
-	pass
-
-def save_as_xlsx(workbook,name,save_dir):
-	# str_now = datetime.datetime.now().strftime('-%y%m%d-%H-%M-%S')
-	# new_filename = os.path.dirname(os.path.abspath(__file__))+'\\test'+str_now+'.xlsx'
-	new_filename = save_dir+"\\"+ name +'.xlsx'
-	print new_filename
-	workbook.save(new_filename)
+	iter_result_str ="contract,gm1%,spc2014,spc2016,spc-new\n"
+	for i in range(100,2000):
+		order.set_mp(origin_mp*i/1000)
+		# print 'mp %.2f,gm1=%.2f,gm1p=%.2f,gm1p_c=%.2f ' %(order.mp,order.gm1,order.gm1_per*100,order.gm1/order.mp*100)
+		result_str = order.show_between_gm1(gm1_start,gm1_end)
+		if result_str:
+			b16 = order.get_bonus2016()
+			b14 = order.get_bonus2014()
+			up = 0.01
+			bnew = order.get_bonus_new(p1=0.05+up,p2=0.04+up,p3=0.025+up,p4=0.015+up,p5=0.01+up,p6=0.005+up)
+			cnt_between_gm1 += 1
+			if b16 >= b14:
+				cnt_2016_win += 1
+			if bnew >= b14:
+				cnt_new_win += 1
+			iter_result_str += result_str +"\n"
+	# print 'order,cnt_between_gm1,cnt_2016_win,cnt_new_win,16win_rate,new_win_rate',		
+	print "%s,%d,%d,%d,%.4f,%.4f" %(order.contract,cnt_between_gm1,cnt_2016_win,cnt_new_win,float(cnt_2016_win)/float(cnt_between_gm1),float(cnt_new_win)/float(cnt_between_gm1))
+	return iter_result_str
 
 
 
+# iter_an_order(o1,o1.mp,0.05,0.25)
+# iter_an_order(o2,o2.mp,0.05,0.25)
+# iter_an_order(o2,14434878.09,0.05,0.25)
 orders = []
 for arg in order_args:
 	orders.append(Order(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],arg[7],arg[8],arg[9],arg[10]))
 buffer_str = ''
 order_cnt = 0
 
-for o in orders:
-	buffer_str += iter_an_order(o,o.mp,0.05,0.20,detail = True,summary=True)
-	order_cnt += 1
+print 'order,cnt_between_gm1,cnt_2016_win,cnt_new_win,16win_rate,new_win_rate'		
 
-save_to_file('sis_test',buffer_str)
+for o in orders:
+	buffer_str += iter_an_order(o,o.mp,0.05,0.25)
+	# buffer_str += u"分割线"*10 + '\n'
+	order_cnt += 1
+	# print "%d orders done!" %(order_cnt)
+
+# print buffer_str
+str_now = datetime.datetime.now().strftime('%y%m%d %H-%M-%S')
+result_file_name = os.path.dirname(os.path.abspath(__file__)) +'\\math' +str_now+'.txt'
+
+with open(result_file_name,"w") as result_file:
+# result_file = open(str_result_name,"w")
+	result_file.write(buffer_str.encode('utf-8'))
+
+print "done!"
 input('press anykey')
 
 

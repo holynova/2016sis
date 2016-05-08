@@ -81,7 +81,7 @@ class Order:
 		self.gm2_per = self.gm2/self.mp
 		self.gm3 = self.gm2 - self.transport -self.variable -self.travel
 		self.gm3_per = self.gm3/self.mp
-
+	
 
 	def get_bonus2014(self):
 		cm2 = self.gm3
@@ -262,10 +262,6 @@ def save_to_file(common_name,content):
 
 	print "saved to file: " + result_file_name
 
-
-# iter_an_order(o1,o1.mp,0.05,0.25)
-# iter_an_order(o2,o2.mp,0.05,0.25)
-# iter_an_order(o2,14434878.09,0.05,0.25)
 orders = []
 for arg in order_args:
 	orders.append(Order(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],arg[7],arg[8],arg[9],arg[10]))
